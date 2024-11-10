@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { TouchableOpacity, StyleSheet, View, Alert, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 export default function TabLayout() {
@@ -9,7 +9,7 @@ export default function TabLayout() {
   };
 
   return (
-    <View style={styles.container}>
+    <>
       <Tabs screenOptions={{ tabBarActiveTintColor: '#0a7ea4' }}>
         <Tabs.Screen
           name="index"
@@ -29,14 +29,11 @@ export default function TabLayout() {
       <TouchableOpacity style={styles.fab} onPress={showAlert}>
         <MaterialIcons name="add-circle" size={80} color="#0a7ea4" />
       </TouchableOpacity>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   fab: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 40 : 10,
