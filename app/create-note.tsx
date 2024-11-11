@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Note } from '../models/Note';
 
 const CreateNote = ({
   onSave,
   onCancel,
 }: {
-  onSave: (note: { title: string; content: string }) => void;
+  onSave: (note: Note) => void;
   onCancel: () => void;
 }) => {
   const [title, setTitle] = useState('');
@@ -13,7 +14,14 @@ const CreateNote = ({
 
   const handleSave = () => {
     if (title.trim() && content.trim()) {
-      onSave({ title, content });
+      const newNote: Note = {
+        id: Date.now().toString(), // Generate a unique ID
+        title,
+        content,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      onSave(newNote); // Pass the new note to the onSave function
       onCancel(); // Close the modal after saving
     } else {
       alert('Please fill out both the title and content.');

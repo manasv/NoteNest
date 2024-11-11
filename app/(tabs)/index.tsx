@@ -1,37 +1,30 @@
-import { StyleSheet } from 'react-native';
-import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { SafeAreaView, View, Text, FlatList } from 'react-native';
+import { Note } from '../../models/Note';
+import CreateNote from '../create-note';
 
-export default function NotesScreen() {
+const NotesScreen = () => {
+  const [notes, setNotes] = useState<Note[]>([]); // State to hold notes
+
+  const handleSaveNote = (newNote: Note) => {
+    setNotes((prevNotes) => [...prevNotes, newNote]); // Add new note to the list
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>NoteNest!</Text>
-        <Text style={styles.subtitle}>Welcome to Notes</Text>
-      </View>
+    <SafeAreaView>
+      <FlatList
+        data={notes}
+        renderItem={({ item }) => (
+          <View>
+            <Text>{item.title}</Text>
+            <Text>{item.content}</Text>
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+      />
+      <CreateNote onSave={handleSaveNote} onCancel={() => { /* Close modal logic */ }} />
     </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-  },
-});
+export default NotesScreen;
