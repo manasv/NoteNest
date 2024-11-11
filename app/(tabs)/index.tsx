@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SafeAreaView, View, Text, FlatList } from 'react-native';
 import { Note } from '../../models/Note';
-import CreateNote from '../create-note';
+
+import { useNotes } from '@/app/NotesContext'; // Import the useNotes hook
 
 const NotesScreen = () => {
-  const [notes, setNotes] = useState<Note[]>([]); // State to hold notes
-
-  const handleSaveNote = (newNote: Note) => {
-    setNotes((prevNotes) => [...prevNotes, newNote]); // Add new note to the list
-  };
+  const { notes, addNote } = useNotes(); // Access notes and addNote
 
   return (
     <SafeAreaView>
@@ -22,7 +19,6 @@ const NotesScreen = () => {
         )}
         keyExtractor={(item) => item.id}
       />
-      <CreateNote onSave={handleSaveNote} onCancel={() => { /* Close modal logic */ }} />
     </SafeAreaView>
   );
 };

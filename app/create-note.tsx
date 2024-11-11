@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Note } from '../models/Note';
+import { useNotes } from '@/app/NotesContext'; // Import the useNotes hook
 
 const CreateNote = ({
   onSave,
   onCancel,
 }: {
-  onSave: (note: Note) => void;
+  onSave: () => void;
   onCancel: () => void;
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const { addNote } = useNotes(); // Access addNote
 
   const handleSave = () => {
     if (title.trim() && content.trim()) {
@@ -21,8 +23,8 @@ const CreateNote = ({
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      onSave(newNote); // Pass the new note to the onSave function
-      onCancel(); // Close the modal after saving
+      addNote(newNote); // Use addNote to add the new note
+      onSave(); // Close the modal after saving
     } else {
       alert('Please fill out both the title and content.');
     }
