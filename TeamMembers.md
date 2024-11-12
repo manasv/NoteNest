@@ -3,4 +3,4 @@
 | Manuel Sanchez | 301275701 |
 | Curtis Carpio | 301322854 |
 | Santiago Navarrete | 301340143 | 
-|  |  | 
+| Rashid Ang | 301257060 | 
