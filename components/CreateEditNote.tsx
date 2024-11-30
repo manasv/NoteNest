@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Alert, PermissionsAndroid, SafeAreaView, View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+
 import { Note } from '../models/Note';
 import { useNotes } from '@/app/NotesContext';
 import { ThemedText } from '@/components/ThemedText';
@@ -49,6 +54,58 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
       alert('Please fill out both the title and content.');
     }
   };
+  
+  const exportPDF = async () => {
+    if (!note) return;
+  
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #000000; text-align:center; }
+            p { font-size: 16px; line-height: 1.5; }
+          </style>
+        </head>
+        <body>
+          <h1>${note.title}</h1>
+          ${note.content}
+        </body>
+      </html>
+    `;
+  
+    try {
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      // MB file size check
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+
+      if (fileInfo.exists) {
+        const fileSizeInBytes = fileInfo.size;  // Size in bytes
+        const fileSizeInMB = Number((fileSizeInBytes / (1024 * 1024)).toFixed(2)); // Size in MB
+        console.log(`File Size: ${fileSizeInMB} MB`);
+
+        if (fileSizeInMB > 50)
+        {
+          alert("PDF size exceeds 50 MB.");
+          return;
+        }
+
+        // Save the file (prompt)
+        await Sharing.shareAsync(uri);
+
+      } else {
+        console.error('File not found!');
+        return;
+      }
+
+      //alert('Note exported to PDF successfully.'); //${uri}
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to export PDF. Please try again.');
+    }
+  };
+  
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -77,6 +134,12 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
                 <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                   <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
                 </TouchableOpacity>
+
+                {note && (
+                  <TouchableOpacity style={styles.exportButton} onPress={exportPDF}>
+                    <ThemedText style={styles.exportButtonText}>PDF</ThemedText>
+                  </TouchableOpacity>
+                )}
 
                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                   <ThemedText style={styles.saveButtonText}>{note ? 'Update Note' : 'Create Note'}</ThemedText>
@@ -151,6 +214,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   saveButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  exportButton: {
+    backgroundColor: '#C4C4C4',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  exportButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',

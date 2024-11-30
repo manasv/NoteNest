@@ -57,7 +57,7 @@ const CreateNote = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => 
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
                   <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
                 </TouchableOpacity>
-
+                
                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                   <ThemedText style={styles.saveButtonText}>Save</ThemedText>
                 </TouchableOpacity>
