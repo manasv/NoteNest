@@ -7,7 +7,8 @@ import uuid from 'react-native-uuid';
 import { RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; // Import the icon library
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import CalendarEvents from 'react-native-calendar-events';  // Add this import for calendar events
 
 interface CreateEditNoteProps {
   note?: Note | null;
@@ -18,9 +19,11 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [reminderDate, setReminderDate] = useState<Date | undefined>(note?.reminderDate);
-  const [showDatePicker, setShowDatePicker] = useState(false); // To toggle the date picker modal
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(note?.startDate);
+  const [endDate, setEndDate] = useState<Date | undefined>(note?.endDate);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const { addNote, updateNote } = useNotes();
-
   const editorRef = useRef<RichEditor>(null);
 
   useEffect(() => {
@@ -28,6 +31,8 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
       setTitle(note.title);
       setContent(note.content);
       setReminderDate(note.reminderDate);
+      setStartDate(note.startDate);
+      setEndDate(note.endDate);
     }
   }, [note]);
 
@@ -39,7 +44,9 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
         content,
         createdAt: note ? note.createdAt : new Date(),
         updatedAt: new Date(),
-        reminderDate, // Include the reminder date
+        reminderDate,
+        startDate,
+        endDate,
       };
 
       if (note) {
@@ -49,7 +56,12 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
       }
 
       if (reminderDate) {
-        await scheduleNotification(reminderDate, newNote.id, newNote.title); // Pass the note title
+        await scheduleNotification(reminderDate, newNote.id, newNote.title);
+      }
+
+      // Save to OS Calendar (Start and End Dates)
+      if (startDate && endDate) {
+        await saveToCalendar(startDate, endDate, newNote.title);
       }
 
       onClose();
@@ -59,7 +71,6 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   };
 
   const scheduleNotification = async (date: Date, noteId: string, title: string) => {
-    // Request notification permission
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') {
       const { status: newStatus } = await Notifications.requestPermissionsAsync();
@@ -70,16 +81,41 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
     }
 
     const trigger = new Date(date);
-    trigger.setSeconds(0); // Ensure the time is exactly at the specified time
+    trigger.setSeconds(0);
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `Reminder for: ${title}`, // Include the note title here
+        title: `Reminder for: ${title}`,
         body: `You set a reminder for this note.`,
-        data: { noteId }, // Pass the note id to identify the note
+        data: { noteId },
       },
       trigger,
     });
+  };
+
+  const saveToCalendar = async (start: Date, end: Date, title: string) => {
+    try {
+      // Request Calendar permission if not granted
+      const permission = await CalendarEvents.requestPermissions();
+      if (permission === 'authorized') {
+        // Save the event to the calendar
+        const event = {
+          calendar: 'default',
+          title,
+          startDate: start.toISOString(),
+          endDate: end.toISOString(),
+          notes: 'Event created from note',
+        };
+
+        await CalendarEvents.saveEvent(title, event);
+        alert('Event saved to calendar successfully!');
+      } else {
+        alert('Permission to access calendar is required!');
+      }
+    } catch (error) {
+      console.error('Error saving event to calendar:', error);
+      alert('There was an error saving the event to the calendar.');
+    }
   };
 
   const handleDeleteReminder = () => {
@@ -93,6 +129,18 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
       return;
     }
     setShowDatePicker(false);
+  };
+
+  const handleCancelCalendar = () => {
+    setShowCalendarModal(false);
+  };
+
+  const handleSetCalendar = () => {
+    if (startDate && endDate && (startDate < new Date() || endDate < new Date())) {
+      alert('Please select a future date.');
+      return;
+    }
+    setShowCalendarModal(false);
   };
 
   const reminderExists = reminderDate && reminderDate > new Date();
@@ -112,24 +160,25 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
                 onChangeText={setTitle}
               />
 
-              {/* Rich Editor for Content */}
               <RichEditor
                 ref={editorRef}
                 style={styles.richEditor}
                 placeholder="Write your note here..."
                 initialContentHTML={content}
-                onChange={(value) => setContent(value)} // Handle content change
+                onChange={(value) => setContent(value)}
               />
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
 
-        {/* Reminder Button */}
         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.reminderButton}>
           <MaterialCommunityIcons name="alarm" size={30} color={reminderExists ? "#FF3B30" : "#007AFF"} />
         </TouchableOpacity>
 
-        {/* Modal for Date Picker with Fade Animation */}
+        <TouchableOpacity onPress={() => setShowCalendarModal(true)} style={styles.calendarButton}>
+          <MaterialCommunityIcons name="calendar" size={30} color="#007AFF" />
+        </TouchableOpacity>
+
         <Modal visible={showDatePicker} animationType="fade" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -164,7 +213,36 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
           </View>
         </Modal>
 
-        {/* Toolbar and Action Buttons (Cancel and Save) */}
+        <Modal visible={showCalendarModal} animationType="fade" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ThemedText style={styles.titleInput}>Set Start and End Date</ThemedText>
+
+              <DateTimePicker
+                value={startDate || new Date()}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => setStartDate(selectedDate || startDate)}
+              />
+              <DateTimePicker
+                value={endDate || new Date()}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => setEndDate(selectedDate || endDate)}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity onPress={handleCancelCalendar} style={styles.cancelButton}>
+                  <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSetCalendar} style={styles.confirmButton}>
+                  <ThemedText style={styles.buttonText}>Set Dates</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         <View style={styles.buttonContainer}>
           <RichToolbar
             editor={editorRef}
@@ -173,12 +251,10 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
             selectedIconTint="#FF3B30"
             style={styles.toolbar}
           />
-
           <View style={styles.actionButtons}>
             <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
               <ThemedText style={styles.buttonText}>Cancel</ThemedText>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
               <ThemedText style={styles.buttonText}>{note ? 'Update Note' : 'Create Note'}</ThemedText>
             </TouchableOpacity>
@@ -192,7 +268,7 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingHorizontal: 20, // Even padding for all sides
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   container: {
@@ -210,8 +286,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',
-    paddingTop: 32, // Space from top
-    paddingHorizontal: 8, // Ensure even horizontal padding
+    paddingTop: 32,
+    paddingHorizontal: 8,
   },
   titleInput: {
     fontSize: 18,
@@ -237,6 +313,14 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
   },
+  calendarButton: {
+    position: 'absolute',
+    top: 16,
+    right: 80,
+    backgroundColor: '#F0F0F0',
+    padding: 10,
+    borderRadius: 50,
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
@@ -256,11 +340,6 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 8,
-  },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
     padding: 10,
     borderRadius: 8,
   },
