@@ -17,7 +17,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 const NotesScreen = () => {
-  const { notes, deleteNote } = useNotes();
+  const { notes, deleteNote, exportNote } = useNotes();
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
 
@@ -85,6 +85,8 @@ const NotesScreen = () => {
       } else {
         Alert.alert('PDF Generated', `PDF saved to: ${uri}`);
       }
+
+      exportNote(note);
     } catch (error) {
       console.error('Export PDF Error:', error);
       Alert.alert('Error', 'Failed to export PDF');

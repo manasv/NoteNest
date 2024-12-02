@@ -52,7 +52,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNotes((prevNotes) => {
       const updatedNotes = prevNotes.filter(note => note.id !== id);
       saveNotes(updatedNotes);
-      amplitude.track("delete_note", {id: id})
+      amplitude.track("delete_note", { id: id });
       return updatedNotes;
     });
   };
@@ -67,7 +67,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const exportNote = (note: Note) => {
-    amplitude.track("export_note", {id: note.id})
+    amplitude.track("export_note", { id: note.id });
   };
 
   return (
