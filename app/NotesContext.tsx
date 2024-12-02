@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Note } from '@/models/Note';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import amplitude from './amplitudeConfig';
 
 interface NotesContextType {
   notes: Note[];
   addNote: (note: Note) => void;
   deleteNote: (id: string) => void;
   updateNote: (note: Note) => void;
+  exportNote: (note: Note) => void;
 }
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNotes((prevNotes) => {
       const updatedNotes = [...prevNotes, note];
       saveNotes(updatedNotes);
+      amplitude.track("delete_note", { title: note.title });
       return updatedNotes;
     });
   };
@@ -49,20 +52,26 @@ export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setNotes((prevNotes) => {
       const updatedNotes = prevNotes.filter(note => note.id !== id);
       saveNotes(updatedNotes);
+      amplitude.track("delete_note", {id: id})
       return updatedNotes;
     });
   };
 
-  const updateNote = (updatedNote: Note) => {
+  const updateNote = async (updatedNote: Note) => {
     setNotes((prevNotes) => {
       const updatedNotes = prevNotes.map(note => (note.id === updatedNote.id ? updatedNote : note));
       saveNotes(updatedNotes);
+      amplitude.track("delete_note", { title: updatedNote.title });
       return updatedNotes;
     });
   };
 
+  const exportNote = (note: Note) => {
+    amplitude.track("export_note", {id: note.id})
+  };
+
   return (
-    <NotesContext.Provider value={{ notes, addNote, deleteNote, updateNote }}>
+    <NotesContext.Provider value={{ notes, addNote, deleteNote, updateNote, exportNote }}>
       {children}
     </NotesContext.Provider>
   );
