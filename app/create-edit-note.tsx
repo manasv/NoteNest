@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, View, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, StyleSheet } from 'react-native';
 import { Note } from '../models/Note';
 import { useNotes } from '@/app/NotesContext';
 import { ThemedText } from '@/components/ThemedText';
 import uuid from 'react-native-uuid';
+import { RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
 
 interface CreateEditNoteProps {
-  note?: Note | null; // Allow note to be null for creating a new note
-  onClose: () => void; // Function to close the modal or navigate back
+  note?: Note | null;
+  onClose: () => void;
 }
 
 const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const { addNote, updateNote } = useNotes();
+
+  const editorRef = useRef<RichEditor>(null);
 
   useEffect(() => {
     if (note) {
@@ -25,7 +28,6 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   const handleSave = () => {
     if (title.trim() && content.trim()) {
       if (note) {
-        // Update existing note
         const updatedNote: Note = {
           ...note,
           title,
@@ -34,7 +36,6 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
         };
         updateNote(updatedNote);
       } else {
-        // Create new note
         const newNote: Note = {
           id: uuid.v4().toString(),
           title,
@@ -52,9 +53,9 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <ScrollView contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
             <View style={styles.innerContainer}>
               <ThemedText style={styles.header}>{note ? 'Edit Note' : 'New Note'}</ThemedText>
 
@@ -65,26 +66,36 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
                 onChangeText={setTitle}
               />
 
-              <TextInput
-                style={styles.contentInput}
+              <RichEditor
+                ref={editorRef}
+                style={styles.richEditor}
                 placeholder="Write your note here..."
-                value={content}
-                onChangeText={setContent}
-                multiline
+                initialContentHTML={content}
+                onChange={(value) => setContent(value)}
               />
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <ThemedText style={styles.saveButtonText}>{note ? 'Update Note' : 'Create Note'}</ThemedText>
-                </TouchableOpacity>
-              </View>
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
+
+        <View style={styles.buttonContainer}>
+          <RichToolbar
+            editor={editorRef}
+            actions={['bold', 'italic', 'unorderedList', 'orderedList']}
+            iconTint="#007AFF"
+            selectedIconTint="#FF3B30"
+            style={styles.toolbar}
+          />
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+              <ThemedText style={styles.buttonText}>Cancel</ThemedText>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+              <ThemedText style={styles.buttonText}>{note ? 'Update Note' : 'Create Note'}</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -93,6 +104,7 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   container: {
@@ -100,38 +112,50 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: 20,
+    justifyContent: 'flex-start',
   },
   scrollViewContent: {
     flexGrow: 1,
-    justifyContent: 'space-between',
   },
   header: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
+    paddingTop: 32,
+    paddingHorizontal: 8,
   },
   titleInput: {
     fontSize: 18,
-    padding: 10,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+    backgroundColor: '#fff',
+    color: '#000',
     borderRadius: 8,
-    marginBottom: 15,
-    backgroundColor: '#f0f0f0',
+    borderWidth: 0,
   },
-  contentInput: {
+  richEditor: {
+    minHeight: 300,
     flex: 1,
-    fontSize: 16,
-    padding: 10,
+    backgroundColor: '#fff',
     borderRadius: 8,
-    textAlignVertical: 'top',
-    marginBottom: 15,
-    backgroundColor: '#f0f0f0',
+    color: '#000',
   },
   buttonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  toolbar: {
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+  },
+  actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: 10,
   },
   cancelButton: {
     backgroundColor: '#FF3B30',
@@ -139,22 +163,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
   },
-  cancelButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   saveButton: {
     backgroundColor: '#007AFF',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
-  saveButtonText: {
+  buttonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });
 
-export default CreateEditNote; 
+export default CreateEditNote;
