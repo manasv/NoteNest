@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import CreateNote from "@/app/create-note";
+import CreateEditNote from "@/app/create-edit-note";
 
 export default function TabLayout() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -56,9 +56,9 @@ export default function TabLayout() {
         onRequestClose={() => setModalVisible(false)}
         presentationStyle="pageSheet"
       >
-        <CreateNote
-          onSave={() => setModalVisible(false)}
-          onCancel={() => setModalVisible(false)}
+        <CreateEditNote
+          note={null}
+          onClose={() => setModalVisible(false)}
         />
       </Modal>
     </>

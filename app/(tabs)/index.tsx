@@ -4,7 +4,7 @@ import { Note } from '@/models/Note';
 import { useNotes } from '@/app/NotesContext';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { ThemedText } from '@/components/ThemedText';
-import CreateEditNote from '@/components/CreateEditNote';
+import CreateEditNote from '@/app/create-edit-note';
 
 const NotesScreen = () => {
   const { notes, deleteNote } = useNotes();

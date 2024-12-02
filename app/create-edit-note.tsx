@@ -1,33 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Note } from '../models/Note';
 import { useNotes } from '@/app/NotesContext';
 import { ThemedText } from '@/components/ThemedText';
 import uuid from 'react-native-uuid';
 
-const CreateNote = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) => {
+interface CreateEditNoteProps {
+  note?: Note | null; // Allow note to be null for creating a new note
+  onClose: () => void; // Function to close the modal or navigate back
+}
+
+const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const { addNote } = useNotes();
+  const { addNote, updateNote } = useNotes();
+
+  useEffect(() => {
+    if (note) {
+      setTitle(note.title);
+      setContent(note.content);
+    }
+  }, [note]);
 
   const handleSave = () => {
     if (title.trim() && content.trim()) {
-      const newNote: Note = {
-        id: uuid.v4().toString(),
-        title,
-        content,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      addNote(newNote);
-      onSave();
+      if (note) {
+        // Update existing note
+        const updatedNote: Note = {
+          ...note,
+          title,
+          content,
+          updatedAt: new Date(),
+        };
+        updateNote(updatedNote);
+      } else {
+        // Create new note
+        const newNote: Note = {
+          id: uuid.v4().toString(),
+          title,
+          content,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        addNote(newNote);
+      }
+      onClose();
     } else {
       alert('Please fill out both the title and content.');
     }
-  };
-
-  const handleCancel = () => {
-    onCancel();
   };
 
   return (
@@ -36,7 +56,7 @@ const CreateNote = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={styles.scrollViewContent}>
             <View style={styles.innerContainer}>
-              <ThemedText style={styles.header}>New Note</ThemedText>
+              <ThemedText style={styles.header}>{note ? 'Edit Note' : 'New Note'}</ThemedText>
 
               <TextInput
                 style={styles.titleInput}
@@ -54,12 +74,12 @@ const CreateNote = ({ onSave, onCancel }: { onSave: () => void; onCancel: () => 
               />
 
               <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                   <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                  <ThemedText style={styles.saveButtonText}>{note ? 'Update Note' : 'Create Note'}</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -137,4 +157,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateNote;
+export default CreateEditNote; 
