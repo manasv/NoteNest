@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, View, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard, StyleSheet, Modal } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  StyleSheet,
+  Modal,
+  Alert,
+} from 'react-native';
 import { Note } from '../models/Note';
 import { useNotes } from '@/app/NotesContext';
 import { ThemedText } from '@/components/ThemedText';
@@ -7,8 +20,8 @@ import uuid from 'react-native-uuid';
 import { RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Notifications from 'expo-notifications';
+import * as Calendar from 'expo-calendar';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import CalendarEvents from 'react-native-calendar-events';  // Add this import for calendar events
 
 interface CreateEditNoteProps {
   note?: Note | null;
@@ -20,10 +33,11 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
   const [content, setContent] = useState('');
   const [reminderDate, setReminderDate] = useState<Date | undefined>(note?.reminderDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(note?.startDate);
   const [endDate, setEndDate] = useState<Date | undefined>(note?.endDate);
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const { addNote, updateNote } = useNotes();
+
   const editorRef = useRef<RichEditor>(null);
 
   useEffect(() => {
@@ -59,9 +73,8 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
         await scheduleNotification(reminderDate, newNote.id, newNote.title);
       }
 
-      // Save to OS Calendar (Start and End Dates)
       if (startDate && endDate) {
-        await saveToCalendar(startDate, endDate, newNote.title);
+        await addEventToCalendar(newNote.title, startDate, endDate);
       }
 
       onClose();
@@ -93,28 +106,39 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
     });
   };
 
-  const saveToCalendar = async (start: Date, end: Date, title: string) => {
-    try {
-      // Request Calendar permission if not granted
-      const permission = await CalendarEvents.requestPermissions();
-      if (permission === 'authorized') {
-        // Save the event to the calendar
-        const event = {
-          calendar: 'default',
-          title,
-          startDate: start.toISOString(),
-          endDate: end.toISOString(),
-          notes: 'Event created from note',
-        };
+  const addEventToCalendar = async (eventTitle: string, start: Date, end: Date) => {
+    const { status } = await Calendar.requestCalendarPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access the calendar is required.');
+      return;
+    }
 
-        await CalendarEvents.saveEvent(title, event);
-        alert('Event saved to calendar successfully!');
-      } else {
-        alert('Permission to access calendar is required!');
-      }
+    const defaultCalendarSource = {
+      isLocalAccount: true,
+      name: 'Default',
+    };
+
+    const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+    const defaultCalendar = calendars.find((cal) => cal.source.name === defaultCalendarSource.name);
+
+    const calendarId = defaultCalendar?.id || calendars[0]?.id;
+
+    if (!calendarId) {
+      Alert.alert('Error', 'Unable to find a suitable calendar to add the event.');
+      return;
+    }
+
+    try {
+      await Calendar.createEventAsync(calendarId, {
+        title: eventTitle,
+        startDate: start,
+        endDate: end,
+        alarms: [{ relativeOffset: -10 }], // Notify 10 minutes before the event
+      });
+      Alert.alert('Event Created', 'The event has been added to your calendar.');
     } catch (error) {
-      console.error('Error saving event to calendar:', error);
-      alert('There was an error saving the event to the calendar.');
+      console.error('Error creating event:', error);
+      Alert.alert('Error', 'There was an error creating the calendar event.');
     }
   };
 
@@ -165,7 +189,7 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
                 style={styles.richEditor}
                 placeholder="Write your note here..."
                 initialContentHTML={content}
-                onChange={(value) => setContent(value)}
+                onChange={(value) => setContent(value)} // Handle content change
               />
             </View>
           </ScrollView>
@@ -236,7 +260,7 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
                   <ThemedText style={styles.buttonText}>Cancel</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSetCalendar} style={styles.confirmButton}>
-                  <ThemedText style={styles.buttonText}>Set Dates</ThemedText>
+                  <ThemedText style={styles.buttonText}>Confirm</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
