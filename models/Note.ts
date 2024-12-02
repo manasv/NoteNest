@@ -6,4 +6,6 @@ export interface Note {
   createdAt: Date; // Timestamp for when the note was created
   updatedAt: Date; // Timestamp for when the note was last updated
   reminderDate?: Date; // Timestamp for when the note need to be reminded
+  startDate?: Date; // Timestamp for when the note need to be reminded
+  endDate?: Date; // Timestamp for when the note need to be reminded
 }

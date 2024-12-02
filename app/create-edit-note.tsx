@@ -196,11 +196,11 @@ const CreateEditNote: React.FC<CreateEditNoteProps> = ({ note, onClose }) => {
         </TouchableWithoutFeedback>
 
         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.reminderButton}>
-          <MaterialCommunityIcons name="alarm" size={30} color={reminderExists ? "#FF3B30" : "#007AFF"} />
+          <MaterialCommunityIcons name="alarm" size={20} color={reminderExists ? "#FF3B30" : "#007AFF"} />
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setShowCalendarModal(true)} style={styles.calendarButton}>
-          <MaterialCommunityIcons name="calendar" size={30} color="#007AFF" />
+          <MaterialCommunityIcons name="calendar" size={20} color="#007AFF" />
         </TouchableOpacity>
 
         <Modal visible={showDatePicker} animationType="fade" transparent={true}>
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   calendarButton: {
     position: 'absolute',
     top: 16,
-    right: 80,
+    right: 64,
     backgroundColor: '#F0F0F0',
     padding: 10,
     borderRadius: 50,
@@ -387,6 +387,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   cancelButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  deleteButton: {
     backgroundColor: '#FF3B30',
     paddingVertical: 12,
     paddingHorizontal: 20,
