@@ -5,4 +5,5 @@ export interface Note {
   content: string; // Content of the note
   createdAt: Date; // Timestamp for when the note was created
   updatedAt: Date; // Timestamp for when the note was last updated
+  reminderDate?: Date; // Timestamp for when the note need to be reminded
 }
